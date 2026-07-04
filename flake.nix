@@ -20,7 +20,7 @@
       systemAgnosticOutputs = {
         overlays.default = overlay;
 
-        nixosModules.default = { config, pkgs, ... }: {
+        nixosModules.default = { pkgs, ... }: {
           nixpkgs.overlays = [ overlay ];
           environment.systemPackages = [ pkgs.rpcs3 ];
           services.udev.packages = [ pkgs.rpcs3 ];
@@ -87,7 +87,7 @@
             in
             stdenv.mkDerivation (finalAttrs: {
               pname = "rpcs3";
-              version = "0.0.41-unstable-2026-07-04";
+              version = "0.0.41-unstable-2026-07-03";
 
               src = fetchFromGitHub {
                 owner = "RPCS3";
