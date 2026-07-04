@@ -6,12 +6,17 @@
     flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { self, nixpkgs, flake-utils }:
+  outputs =
+    {
+      self,
+      nixpkgs,
+      flake-utils,
+    }:
     let
       overlay = final: prev: {
         rpcs3 = self.packages.${final.stdenv.hostPlatform.system}.rpcs3;
       };
-      
+
       systemAgnosticOutputs = {
         overlays.default = overlay;
 
@@ -22,7 +27,8 @@
         };
       };
 
-      systemSpecificOutputs = flake-utils.lib.eachDefaultSystem (system:
+      systemSpecificOutputs = flake-utils.lib.eachDefaultSystem (
+        system:
         let
           pkgs = import nixpkgs {
             inherit system;
@@ -72,13 +78,17 @@
               vulkan-memory-allocator,
             }:
             let
-              inherit (qt6Packages) qtbase qtmultimedia wrapQtAppsHook qtwayland;
+              inherit (qt6Packages)
+                qtbase
+                qtmultimedia
+                wrapQtAppsHook
+                qtwayland
+                ;
             in
             stdenv.mkDerivation (finalAttrs: {
               pname = "rpcs3";
               version = "0.0.41-unstable-2026-07-04";
 
-              # Your original, perfect source layout wrapper
               src = fetchFromGitHub {
                 owner = "RPCS3";
                 repo = "rpcs3";
@@ -133,16 +143,47 @@
 
               dontWrapGApps = true;
 
-              nativeBuildInputs = [ cmake pkg-config git wrapQtAppsHook wrapGAppsHook3 ];
+              nativeBuildInputs = [
+                cmake
+                pkg-config
+                git
+                wrapQtAppsHook
+                wrapGAppsHook3
+              ];
 
               buildInputs = [
-                qtbase qtmultimedia openal (glew.override { enableEGL = false; })
-                vulkan-headers vulkan-loader libpng ffmpeg libevdev zlib libusb1 curl
-                python3 pugixml sdl3 protobuf_33 llvm libsm opencv.cxxdev cubeb
-                miniupnpc rtmidi glslang zstd hidapi vulkan-memory-allocator
+                qtbase
+                qtmultimedia
+                openal
+                (glew.override { enableEGL = false; })
+                vulkan-headers
+                vulkan-loader
+                libpng
+                ffmpeg
+                libevdev
+                zlib
+                libusb1
+                curl
+                python3
+                pugixml
+                sdl3
+                protobuf_33
+                llvm
+                libsm
+                opencv.cxxdev
+                cubeb
+                miniupnpc
+                rtmidi
+                glslang
+                zstd
+                hidapi
+                vulkan-memory-allocator
               ]
               ++ lib.optional faudioSupport faudio
-              ++ lib.optionals waylandSupport [ wayland qtwayland ];
+              ++ lib.optionals waylandSupport [
+                wayland
+                qtwayland
+              ];
 
               doInstallCheck = true;
 
@@ -156,14 +197,6 @@
                 install -D ${./99-dualsense-controllers.rules} $out/etc/udev/rules.d/99-dualsense-controllers.rules
               '';
 
-              meta = {
-                description = "PS3 emulator/debugger";
-                homepage = "https://rpcs3.net";
-                maintainers = with lib.maintainers; [ ilian ];
-                license = [ lib.licenses.gpl2Only lib.licenses.gpl3Plus lib.licenses.unfree ];
-                platforms = [ "x86_64-linux" "aarch64-linux" ];
-                mainProgram = "rpcs3";
-              };
             })
           ) { };
 
