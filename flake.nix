@@ -4,14 +4,9 @@
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
-    
-    rpcs3-src = {
-      url = "github:RPCS3/rpcs3";
-      flake = false;
-    };
   };
 
-  outputs = { self, nixpkgs, flake-utils, rpcs3-src }:
+  outputs = { self, nixpkgs, flake-utils }:
     let
       overlay = final: prev: {
         rpcs3 = self.packages.${final.stdenv.hostPlatform.system}.rpcs3;
@@ -39,6 +34,8 @@
             {
               lib,
               stdenv,
+              fetchFromGitHub,
+              nix-update-script,
               cmake,
               pkg-config,
               git,
@@ -79,21 +76,27 @@
             in
             stdenv.mkDerivation (finalAttrs: {
               pname = "rpcs3";
-              
-              version = "0.0.41-unstable-${rpcs3-src.lastModifiedDate or "latest"}";
+              version = "0.0.41-unstable-2026-07-04";
 
-              src = rpcs3-src;
+              # Your original, perfect source layout wrapper
+              src = fetchFromGitHub {
+                owner = "RPCS3";
+                repo = "rpcs3";
+                rev = "d87cf99b655e1a3c85fa5913b2b591dec18a473a";
+                postCheckout = ''
+                  cd $out/3rdparty
+                  git submodule update --init \
+                    fusion/fusion asmjit/asmjit yaml-cpp/yaml-cpp SoundTouch/soundtouch stblib/stb \
+                    feralinteractive/feralinteractive wolfssl/wolfssl
+                '';
+                hash = "sha256-PhSLor79VWpCsBfgG8UL+cZ+FT+eVFisq39zbj9sj4Q=";
+              };
 
-              postCheckout = ''
-                cd $out/3rdparty
-                git submodule update --init \
-                  fusion/fusion asmjit/asmjit yaml-cpp/yaml-cpp SoundTouch/soundtouch stblib/stb \
-                  feralinteractive/feralinteractive wolfssl/wolfssl
-              '';
+              passthru.updateScript = nix-update-script { extraArgs = [ "--version=branch" ]; };
 
               preConfigure = ''
                 cat > ./rpcs3/git-version.h <<EOF
-                #define RPCS3_GIT_VERSION "nixpkgs-${lib.substring 0 7 (rpcs3-src.rev or "unknown")}"
+                #define RPCS3_GIT_VERSION "nixpkgs-${lib.sources.shortRev finalAttrs.src.rev}"
                 #define RPCS3_GIT_FULL_BRANCH "RPCS3/rpcs3/master"
                 #define RPCS3_GIT_BRANCH "HEAD"
                 #define RPCS3_GIT_VERSION_NO_UPDATE 1
@@ -155,7 +158,7 @@
 
               meta = {
                 description = "PS3 emulator/debugger";
-                homepage = "https://rpcs3.net/";
+                homepage = "https://rpcs3.net";
                 maintainers = with lib.maintainers; [ ilian ];
                 license = [ lib.licenses.gpl2Only lib.licenses.gpl3Plus lib.licenses.unfree ];
                 platforms = [ "x86_64-linux" "aarch64-linux" ];

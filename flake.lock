@@ -37,24 +37,7 @@
     "root": {
       "inputs": {
         "flake-utils": "flake-utils",
-        "nixpkgs": "nixpkgs",
-        "rpcs3-src": "rpcs3-src"
-      }
-    },
-    "rpcs3-src": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1783060072,
-        "narHash": "sha256-jPHkr3geqMvjzyhgyxANRCyQznkLGlNHZyplDYnnJFM=",
-        "owner": "RPCS3",
-        "repo": "rpcs3",
-        "rev": "d87cf99b655e1a3c85fa5913b2b591dec18a473a",
-        "type": "github"
-      },
-      "original": {
-        "owner": "RPCS3",
-        "repo": "rpcs3",
-        "type": "github"
+        "nixpkgs": "nixpkgs"
       }
     },
     "systems": {
