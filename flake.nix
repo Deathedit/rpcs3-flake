@@ -1,0 +1,172 @@
+{
+  description = "Custom RPCS3 Flake";
+
+  inputs = {
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    flake-utils.url = "github:numtide/flake-utils";
+    
+    rpcs3-src = {
+      url = "github:RPCS3/rpcs3";
+      flake = false;
+    };
+  };
+
+  outputs = { self, nixpkgs, flake-utils, rpcs3-src }:
+    let
+      overlay = final: prev: {
+        rpcs3 = self.packages.${final.stdenv.hostPlatform.system}.rpcs3;
+      };
+      
+      systemAgnosticOutputs = {
+        overlays.default = overlay;
+
+        nixosModules.default = { config, pkgs, ... }: {
+          nixpkgs.overlays = [ overlay ];
+          environment.systemPackages = [ pkgs.rpcs3 ];
+          services.udev.packages = [ pkgs.rpcs3 ];
+        };
+      };
+
+      systemSpecificOutputs = flake-utils.lib.eachDefaultSystem (system:
+        let
+          pkgs = import nixpkgs {
+            inherit system;
+            config.allowUnfree = true;
+          };
+        in
+        {
+          packages.rpcs3 = pkgs.callPackage (
+            {
+              lib,
+              stdenv,
+              cmake,
+              pkg-config,
+              git,
+              qt6Packages,
+              openal,
+              glew,
+              vulkan-headers,
+              vulkan-loader,
+              libpng,
+              libsm,
+              ffmpeg,
+              libevdev,
+              libusb1,
+              zlib,
+              curl,
+              python3,
+              pugixml,
+              protobuf_33,
+              llvm,
+              cubeb,
+              opencv,
+              enableDiscordRpc ? false,
+              faudioSupport ? true,
+              faudio,
+              sdl3,
+              waylandSupport ? true,
+              wayland,
+              wrapGAppsHook3,
+              miniupnpc,
+              rtmidi,
+              glslang,
+              zstd,
+              hidapi,
+              vulkan-memory-allocator,
+            }:
+            let
+              inherit (qt6Packages) qtbase qtmultimedia wrapQtAppsHook qtwayland;
+            in
+            stdenv.mkDerivation (finalAttrs: {
+              pname = "rpcs3";
+              
+              version = "0.0.41-unstable-${rpcs3-src.lastModifiedDate or "latest"}";
+
+              src = rpcs3-src;
+
+              postCheckout = ''
+                cd $out/3rdparty
+                git submodule update --init \
+                  fusion/fusion asmjit/asmjit yaml-cpp/yaml-cpp SoundTouch/soundtouch stblib/stb \
+                  feralinteractive/feralinteractive wolfssl/wolfssl
+              '';
+
+              preConfigure = ''
+                cat > ./rpcs3/git-version.h <<EOF
+                #define RPCS3_GIT_VERSION "nixpkgs-${lib.substring 0 7 (rpcs3-src.rev or "unknown")}"
+                #define RPCS3_GIT_FULL_BRANCH "RPCS3/rpcs3/master"
+                #define RPCS3_GIT_BRANCH "HEAD"
+                #define RPCS3_GIT_VERSION_NO_UPDATE 1
+                EOF
+              '';
+
+              cmakeFlags = [
+                (lib.cmakeBool "BUILD_SHARED_LIBS" false)
+                (lib.cmakeBool "USE_SYSTEM_ZLIB" true)
+                (lib.cmakeBool "USE_SYSTEM_LIBUSB" true)
+                (lib.cmakeBool "USE_SYSTEM_LIBPNG" true)
+                (lib.cmakeBool "USE_SYSTEM_FFMPEG" true)
+                (lib.cmakeBool "USE_SYSTEM_CURL" true)
+                (lib.cmakeBool "USE_SYSTEM_FAUDIO" true)
+                (lib.cmakeBool "USE_SYSTEM_OPENAL" true)
+                (lib.cmakeBool "USE_SYSTEM_PUGIXML" true)
+                (lib.cmakeBool "USE_SYSTEM_PROTOBUF" true)
+                (lib.cmakeBool "USE_SYSTEM_SDL" true)
+                (lib.cmakeBool "USE_SYSTEM_OPENCV" true)
+                (lib.cmakeBool "USE_SYSTEM_CUBEB" true)
+                (lib.cmakeBool "USE_SYSTEM_MINIUPNPC" true)
+                (lib.cmakeBool "USE_SYSTEM_RTMIDI" true)
+                (lib.cmakeBool "USE_SYSTEM_GLSLANG" true)
+                (lib.cmakeBool "USE_SYSTEM_ZSTD" true)
+                (lib.cmakeBool "USE_SYSTEM_HIDAPI" true)
+                (lib.cmakeBool "USE_SYSTEM_VULKAN_MEMORY_ALLOCATOR" true)
+                (lib.cmakeBool "USE_SDL" true)
+                (lib.cmakeBool "WITH_LLVM" true)
+                (lib.cmakeBool "BUILD_LLVM" false)
+                (lib.cmakeBool "USE_NATIVE_INSTRUCTIONS" false)
+                (lib.cmakeBool "USE_DISCORD_RPC" enableDiscordRpc)
+                (lib.cmakeBool "USE_FAUDIO" faudioSupport)
+              ];
+
+              dontWrapGApps = true;
+
+              nativeBuildInputs = [ cmake pkg-config git wrapQtAppsHook wrapGAppsHook3 ];
+
+              buildInputs = [
+                qtbase qtmultimedia openal (glew.override { enableEGL = false; })
+                vulkan-headers vulkan-loader libpng ffmpeg libevdev zlib libusb1 curl
+                python3 pugixml sdl3 protobuf_33 llvm libsm opencv.cxxdev cubeb
+                miniupnpc rtmidi glslang zstd hidapi vulkan-memory-allocator
+              ]
+              ++ lib.optional faudioSupport faudio
+              ++ lib.optionals waylandSupport [ wayland qtwayland ];
+
+              doInstallCheck = true;
+
+              preFixup = ''
+                qtWrapperArgs+=("''${gappsWrapperArgs[@]}")
+              '';
+
+              postInstall = ''
+                install -D ${./99-ds3-controllers.rules} $out/etc/udev/rules.d/99-ds3-controllers.rules
+                install -D ${./99-ds4-controllers.rules} $out/etc/udev/rules.d/99-ds4-controllers.rules
+                install -D ${./99-dualsense-controllers.rules} $out/etc/udev/rules.d/99-dualsense-controllers.rules
+              '';
+
+              meta = {
+                description = "PS3 emulator/debugger";
+                homepage = "https://rpcs3.net/";
+                maintainers = with lib.maintainers; [ ilian ];
+                license = [ lib.licenses.gpl2Only lib.licenses.gpl3Plus lib.licenses.unfree ];
+                platforms = [ "x86_64-linux" "aarch64-linux" ];
+                mainProgram = "rpcs3";
+              };
+            })
+          ) { };
+
+          packages.default = self.packages.${system}.rpcs3;
+        }
+      );
+    in
+    systemAgnosticOutputs // systemSpecificOutputs;
+}
