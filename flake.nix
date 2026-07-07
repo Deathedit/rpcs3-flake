@@ -87,19 +87,19 @@
             in
             stdenv.mkDerivation (finalAttrs: {
               pname = "rpcs3";
-              version = "0.0.41-unstable-2026-07-03";
+              version = "0.0.41-unstable-2026-07-07";
 
               src = fetchFromGitHub {
                 owner = "RPCS3";
                 repo = "rpcs3";
-                rev = "d87cf99b655e1a3c85fa5913b2b591dec18a473a";
+                rev = "5c90bf5865b5f820231c0af87955bdfab28f0c14";
                 postCheckout = ''
                   cd $out/3rdparty
                   git submodule update --init \
                     fusion/fusion asmjit/asmjit yaml-cpp/yaml-cpp SoundTouch/soundtouch stblib/stb \
                     feralinteractive/feralinteractive wolfssl/wolfssl
                 '';
-                hash = "sha256-PhSLor79VWpCsBfgG8UL+cZ+FT+eVFisq39zbj9sj4Q=";
+                hash = "sha256-8gnDbqPLitu/GbXIP1am/CWmyJqJTqgma82pdG9+2fA=";
               };
 
               passthru.updateScript = nix-update-script { extraArgs = [ "--version=branch" ]; };
