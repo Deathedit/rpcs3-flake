@@ -54,21 +54,3 @@ Apply your modifications by running your traditional profile switch sequence:
 ```bash
 sudo nixos-rebuild switch --flake .#yourHostname
 ```
-
----
-
-## 🔄 Routine Upkeep
-
-When you want to pull down the newest emulation enhancements from the upstream developers:
-
-1. Navigate to this directory (`~/rpcs3-flake`).
-2. Fetch the newest snapshot reference and commit the updated tracking layout:
-   ```bash
-   nix flake update rpcs3-src
-   git commit -am "chore: bump rpcs3 upstream revision"
-   ```
-3. Navigate back to your system configuration file path and update the input references to lock onto your repository modifications:
-   ```bash
-   nix flake update rpcs3-flake
-   sudo nixos-rebuild switch --flake .#yourHostname
-   ```
