@@ -192,9 +192,9 @@
               '';
 
               postInstall = ''
-                install -D ${./99-ds3-controllers.rules} $out/etc/udev/rules.d/99-ds3-controllers.rules
-                install -D ${./99-ds4-controllers.rules} $out/etc/udev/rules.d/99-ds4-controllers.rules
-                install -D ${./99-dualsense-controllers.rules} $out/etc/udev/rules.d/99-dualsense-controllers.rules
+                install -D ${./udev/99-ds3-controllers.rules} $out/etc/udev/rules.d/99-ds3-controllers.rules
+                install -D ${./udev/99-ds4-controllers.rules} $out/etc/udev/rules.d/99-ds4-controllers.rules
+                install -D ${./udev/99-dualsense-controllers.rules} $out/etc/udev/rules.d/99-dualsense-controllers.rules
               '';
 
             })
