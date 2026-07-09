@@ -1,9 +1,6 @@
 name: Update rpcs3
 
 on:
-  schedule:
-    # Every Sunday at 04:00 UTC. Adjust as you like (min hour dom mon dow).
-    - cron: "0 4 * * 0"
   # Lets you run it on demand from the Actions tab.
   workflow_dispatch:
 
