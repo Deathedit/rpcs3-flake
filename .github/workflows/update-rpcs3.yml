@@ -1,10 +1,8 @@
 name: Update rpcs3
 
 on:
-  # Lets you run it on demand from the Actions tab.
   workflow_dispatch:
-
-# Don't let two runs stomp on each other.
+  
 concurrency:
   group: update-rpcs3
   cancel-in-progress: false
@@ -21,17 +19,15 @@ jobs:
 
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
-
-      # Runs your existing script verbatim, with nix-update on PATH.
-      # nix-update does the real work (new rev + hash); the script then
-      # repairs the version string exactly as it does locally.
+        
       - name: Run update-rpcs3.sh
         run: nix shell nixpkgs#nix-update --command bash ./update-rpcs3.sh
-
-      # Cheap guard: make sure the flake still evaluates before committing,
-      # so a bad bump doesn't silently land on your branch.
+        
       - name: Sanity-check evaluation
         run: nix eval .#rpcs3.version --raw
+        
+      - name: Verify the new source hash builds
+        run: nix build .#rpcs3.src --no-link -L
 
       - name: Commit if changed
         run: |
